@@ -65,24 +65,33 @@ You can fit the model with your data by calling the `fit()` method. The input da
 ```python
 import pandas as pd
 import numpy as np
+from sklearn.ensemble import RandomForestClassifier
 
 # Example data
 X = pd.DataFrame({'Feature1': [1, 3, 5], 'Feature2': [2, 4, 6]})
 y = np.array([(1, 500), (0, 200), (1, 800)], dtype=[('Status', '?'), ('Survival_in_days', '<f8')])
 
-# Fit the model
-case_model.fit(X, y)
+# Transform the data
+x_case, y_case = case_model.transform(X, y)
+
+# Fit model
+case_model.fit(x_case,y_case, RandomForestClassifier())
+
+# Get survival scores
+pred_scores = case_model.fitted_classifier.predict_proba(x_case)[:,1]
+
+case_model.inverse_transform(pred_scores)
 ```
 
 ### Handling Incomplete Probabilities
-If a record's probability list is shorter than the defined study period, use the `handle_incomplete_probabilities()` method:
+If a training record is censored, use the `predict_survival_function_for_censored_training_data()` method to obtain a predicted survival function:
 
 ```python
 # Example record probabilities with incomplete lists
 record_probs = {0: [0.9, 0.8], 1: [0.85, 0.7, 0.6], 2: [0.75]}
 
 # Handle incomplete probabilities
-updated_record_probs = case_model.handle_incomplete_probabilities(record_probs, X, study_period=3)
+updated_record_probs = case_model.predict_survival_function_for_censored_training_data(record_probs, X, study_period=3)
 
 print(updated_record_probs)
 ```
