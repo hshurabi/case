@@ -148,25 +148,6 @@ class CASE(BaseEstimator, TransformerMixin):
         self.classifier = classifier
         self.fitted_classifier = self.classifier.fit(X_aug, y_aug)
         return self
-    
-    # def predict_survival_function(self, X):
-    #     """
-    #     Predict survival probabilities for new data.
-
-    #     :param X: Feature matrix.
-    #     :return: Predicted survival probabilities for each time point.
-    #     """
-    #     survival_probs = []
-
-    #     for x in X:
-    #         probs = []
-    #         for tau in range(1, self.study_period + 1):
-    #             x_aug = np.append(x, tau).reshape(1, -1)
-    #             prob = self.fitted_classifier.predict_proba(x_aug)[0, 1]  # Probability of survival
-    #             probs.append(prob)
-    #         survival_probs.append(probs)
-
-    #     return np.array(survival_probs)
 
     def construct_case_regression_data(self,X, survivals, **kwargs):
         # Filter data to include event times > study_period
