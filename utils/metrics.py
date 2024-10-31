@@ -1,60 +1,41 @@
-# import numpy as 
+import numpy as np
 
-# def get_surv_score_case(patient_tx_id, version = 1):
-#     surv = aosa_result_test_masked_6[aosa_result_test_masked_6['TX_ID']==patient_tx_id]['y_pred_prob'].values
-#     surv = np.concatenate(([1.0], surv))
-#     case_time_years = aosa_result_test_masked_6[aosa_result_test_masked_6['TX_ID']==patient_tx_id]['each_year_int'].values
-#     case_time_years = np.concatenate(( case_time_years, [33.0]))
-#     event_time = Mydatasets_Cox['outcome_test'][Mydatasets_Cox['outcome_test']['TX_ID']==patient_tx_id]['Surv_GS_Y'].values[0]    
-#     P = len(surv)
-#     return survival_function_score(surv,case_time_years,event_time,P=P,version = version)
-
-
-# def survival_function_score(surv_probs,surv_preiod,event_time,P, version=1):
-#     """
-#     Calculate the ideal score for a survival curve.
+def iAUSC(survival_function, time, event_time):
+    """
+    Calculate the integrated Area Under the Survival Curve (iAUSC) for a given survival function.
     
-#     Parameters:
-#     - times: Array-like, representing the time points.
-#     - events: Array-like, representing the event indicators (1 for event, 0 for censored).
+    Parameters:
+    - survival_function: List or array of survival probabilities over time.
+    - time: List or array of time points corresponding to the survival function.
+    - event_time: Event time for the individual.
     
-#     Returns:
-#     - score: The ideal score for the survival curve.
-#     """
-#     # Get surv function 
-
-#     # Find the time of event
-#     # event_time = 
+    Returns:
+    - iAUSC score
+    """
+    # Convert inputs to numpy arrays if they are not already
+    if not isinstance(survival_function, np.ndarray):
+        survival_function = np.array(survival_function)
+    if not isinstance(time, np.ndarray):
+        time = np.array(time)
     
-#     # Until survival mask
-#     # mask = < event_time
-#     if version != 's-score':
-#         mask = surv_preiod <= event_time
+    # Mask for times before or at the event time
+    mask = time <= event_time
+    P = np.max(time)
     
-#         # Calculate the area under the survival curve until time of event
-#         area_until_event = np.sum(surv_probs[mask])/(np.sum(surv_preiod[mask]))
-        
-#         # Calculate the area under the survival curve after time of event
-#         area_after_event = np.sum(1-surv_probs[~mask])/(np.sum(surv_preiod[~mask]))
-
-#         # Calculate weighted AUSC
-#         weighted_area_until_event =  np.sum(np.array(surv_probs[mask])*np.array(surv_preiod[mask]))
-
-#         # weighted_area_after_event
-#         weighted_area_after_event =  np.sum(np.array(1-surv_probs[~mask])*np.array(surv_preiod[~mask]))
-
-
-#     # Denominator
-#     weighted_denom = np.sum( np.exp(-1/P*np.abs(event_time-np.array(surv_preiod))) )
-#     if version ==8:
-#             # Calculate weighted AUSC
-#         weighted_area_until_event_1 =  np.sum(np.array(surv_probs[mask])*np.exp(-1/P*np.abs(event_time-np.array(surv_preiod[mask]))))
-
-#         # weighted_area_after_event
-#         weighted_area_after_event_1 =  np.sum(np.array(1-surv_probs[~mask])*np.exp(-1/P*np.abs(event_time-np.array(surv_preiod[~mask]))))
-
-#         score = (weighted_area_until_event_1+weighted_area_after_event_1 )/weighted_denom
-
-#     elif version =="s-score":
-#         score = (np.sum(np.array(surv_probs)*np.exp(-event_time/P)) )/weighted_denom
-#     return score
+    # Denominator: Weighted sum across all times
+    weighted_denom = np.sum(np.exp(-1/P * np.abs(event_time - time)))
+    
+    # Weighted area until the event time
+    weighted_area_until_event = np.sum(
+        survival_function[mask] * np.exp(-1/P * np.abs(event_time - time[mask]))
+    )
+    
+    # Weighted area after the event time
+    weighted_area_after_event = np.sum(
+        (1 - survival_function[~mask]) * np.exp(-1/P * np.abs(event_time - time[~mask]))
+    )
+    
+    # iAUSC score calculation
+    score = (weighted_area_until_event + weighted_area_after_event) / weighted_denom
+    
+    return score
