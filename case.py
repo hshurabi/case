@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from Liver_Binary.CASE.utils import data_processing
+from .utils import data_processing
 
 class CASE(BaseEstimator, TransformerMixin):
     def __init__(self, study_period, period_type='year'):
@@ -14,15 +14,15 @@ class CASE(BaseEstimator, TransformerMixin):
         """
         self.study_period = study_period
         self.period_type = period_type
-        self.period_lengths = {
+        self._period_lengths = {
             'year': 365,
             'month': 30,
             '6-month': 182,
             '3-month': 91
         }
-        if period_type not in self.period_lengths:
+        if period_type not in self._period_lengths:
             raise ValueError("Invalid period_type. Choose from 'year', 'month', '6-month', '3-month'.")
-        self.period_length = self.period_lengths[period_type]
+        self.period_length = self._period_lengths[period_type]
         self.event_field = None
         self.time_field = None
         self.transformation_map = None
@@ -144,7 +144,10 @@ class CASE(BaseEstimator, TransformerMixin):
         if y is None:
             regression_indices = X.index.values
         else:
-            regression_indices = data_processing.detect_uncensored_records(X, y)
+            regression_indices = data_processing.detect_uncensored_records(X, 
+                                                                           y, 
+                                                                           self.study_period,
+                                                                           self.period_length)
 
         probs_df = pd.DataFrame([survivals[record] for record in survivals.keys() if \
                                 record in regression_indices], 
