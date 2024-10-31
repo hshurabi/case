@@ -1,4 +1,4 @@
-# Import the main CASE class from case.py
+# Import the main CASE class
 from .case import CASE
 
 # Import auxiliary modules from utils for convenience
