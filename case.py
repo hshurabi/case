@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
+from Liver_Binary.CASE.utils import data_processing
+
 class CASE(BaseEstimator, TransformerMixin):
     def __init__(self, study_period, period_type='year'):
         """
@@ -26,22 +28,6 @@ class CASE(BaseEstimator, TransformerMixin):
         self.transformation_map = None
         self.classifier = None
         self.regressor = None
-        
-
-    def _detect_fields(self, y):
-        """
-        Detect the event and time fields in the structured array y.
-        
-        :param y: Structured array with event and time fields.
-        """
-        for name, dtype in y.dtype.fields.items():
-            if np.issubdtype(dtype[0], np.bool_) or np.issubdtype(dtype[0], np.integer):
-                self.event_field = name
-            elif np.issubdtype(dtype[0], np.floating):
-                self.time_field = name
-        
-        if not self.event_field or not self.time_field:
-            raise ValueError("Unable to detect the event or time field in y.")
 
     def transform(self, X, y, is_test_data = False):
         """
@@ -53,7 +39,7 @@ class CASE(BaseEstimator, TransformerMixin):
         """
         # Detect event and time fields if not already set
         if self.event_field is None or self.time_field is None:
-            self._detect_fields(y)
+            self.event_filed, self.time_field = data_processing.detect_event_time_fields(y)
         
         if self.transformation_map is None:
             self.transformation_map = {}
@@ -158,11 +144,7 @@ class CASE(BaseEstimator, TransformerMixin):
         if y is None:
             regression_indices = X.index.values
         else:
-            regression_mask = ((y[self.time_field]/self.period_length<(self.study_period)) & \
-                                (y[self.event_field]==True) ) | \
-                                (y[self.time_field]/self.period_length>=(self.study_period))
-            self.regression_indices = X.reset_index()[regression_mask].set_index('index',drop=True).index.values
-            regression_indices = self.regression_indices 
+            regression_indices = data_processing.detect_uncensored_records(X, y)
 
         probs_df = pd.DataFrame([survivals[record] for record in survivals.keys() if \
                                 record in regression_indices], 
